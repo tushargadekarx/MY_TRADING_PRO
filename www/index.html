@@ -1,0 +1,415 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MY TRADING - Analysis Terminal</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+ background:#080d16;color:#e8edf5;
+ font-family:Arial,sans-serif;
+}
+header{
+ background:#101827;padding:17px;
+ display:flex;justify-content:space-between;
+ align-items:center;border-bottom:1px solid #263247;
+}
+.logo{font-size:20px;font-weight:bold;color:#22c997}
+.status{font-size:12px;color:#22c997}
+nav{
+ display:flex;gap:8px;padding:12px;
+ overflow-x:auto;background:#101827;
+}
+nav button,.pair{
+ background:#1b2638;color:white;border:1px solid #334158;
+ padding:10px 14px;border-radius:7px;cursor:pointer;
+ white-space:nowrap;
+}
+nav button.active{background:#087d62}
+main{padding:12px;max-width:1400px;margin:auto}
+.panel{
+ background:#101827;border:1px solid #263247;
+ border-radius:10px;padding:14px;margin-bottom:13px;
+}
+h3{font-size:15px;margin-bottom:13px;color:#22c997}
+.pairs{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}
+.pair.active{background:#087d62}
+#chart{height:480px;width:100%}
+iframe{border:0}
+.grid{
+ display:grid;grid-template-columns:repeat(2,1fr);gap:10px
+}
+.stat{
+ background:#1b2638;padding:13px;border-radius:8px;
+}
+.stat small{color:#9ba9bd}
+.stat h2{font-size:21px;margin-top:7px}
+input,select{
+ background:#080d16;color:white;border:1px solid #334158;
+ border-radius:6px;padding:12px;width:100%;margin:6px 0;
+}
+.action{
+ background:#087d62;color:white;border:0;padding:12px;
+ border-radius:7px;width:100%;margin-top:8px;
+ font-weight:bold;cursor:pointer;
+}
+.danger{background:#bd394b}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:11px 5px;border-bottom:1px solid #263247;text-align:left}
+.green{color:#22c997}
+.red{color:#ff6176}
+#journal{overflow-x:auto}
+footer{text-align:center;color:#66758a;padding:20px;font-size:12px}
+@media(max-width:600px){
+ #chart{height:390px}
+ .grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">MY TRADING PRO</div>
+ <div class="status">● ANALYSIS TERMINAL</div>
+</header>
+
+<nav>
+ <button class="active" onclick="showTab('dashboard',this)">Dashboard</button>
+ <button onclick="showTab('analysis',this)">Analysis</button>
+ <button onclick="showTab('calculator',this)">Calculator</button>
+ <button onclick="showTab('journalPage',this)">Journal</button>
+</nav>
+
+<main>
+
+<section id="dashboard">
+
+<div class="panel">
+ <h3>MARKET WATCHLIST</h3>
+ <div class="pairs" id="pairs"></div>
+ <div id="selectedPair">EURUSD</div>
+</div>
+
+<div class="panel">
+ <h3>ADVANCED TRADING CHART</h3>
+ <div id="chart"></div>
+</div>
+
+<div class="grid">
+ <div class="stat">
+  <small>Selected Pair</small>
+  <h2 id="pairName">EUR/USD</h2>
+ </div>
+ <div class="stat">
+  <small>Platform</small>
+  <h2 class="green">TradingView</h2>
+ </div>
+</div>
+
+<div class="panel">
+ <h3>MARKET OVERVIEW</h3>
+ <div id="market"></div>
+</div>
+
+</section>
+
+<section id="analysis" hidden>
+ <div class="panel">
+  <h3>TECHNICAL ANALYSIS</h3>
+  <div id="technical"></div>
+ </div>
+ <div class="panel">
+  <h3>ANALYSIS GUIDE</h3>
+  <p>RSI: Momentum indicator</p><br>
+  <p>MACD: Trend and momentum</p><br>
+  <p>Moving Average: Trend direction</p><br>
+  <p>Support: Possible buying area</p><br>
+  <p>Resistance: Possible selling area</p>
+ </div>
+</section>
+
+<section id="calculator" hidden>
+ <div class="panel">
+  <h3>RISK MANAGEMENT CALCULATOR</h3>
+
+  <label>Account Balance ($)</label>
+  <input id="balance" type="number" value="10000">
+
+  <label>Risk Percentage (%)</label>
+  <input id="risk" type="number" value="1" step="0.1">
+
+  <label>Entry Price</label>
+  <input id="entry" type="number" placeholder="1.08500" step="any">
+
+  <label>Stop Loss Price</label>
+  <input id="sl" type="number" placeholder="1.08300" step="any">
+
+  <label>Take Profit Price</label>
+  <input id="tp" type="number" placeholder="1.08900" step="any">
+
+  <button class="action" onclick="calculate()">CALCULATE RISK</button>
+
+  <div class="grid" style="margin-top:15px">
+   <div class="stat"><small>Risk Amount</small><h2 id="riskAmount">$0</h2></div>
+   <div class="stat"><small>Reward Amount</small><h2 id="rewardAmount">$0</h2></div>
+   <div class="stat"><small>Risk Reward</small><h2 id="rr">0</h2></div>
+   <div class="stat"><small>Lot Size*</small><h2 id="lot">0</h2></div>
+  </div>
+  <small>*Approximate sizing for standard USD-quoted forex pairs. Verify pip value and account currency.</small>
+ </div>
+</section>
+
+<section id="journalPage" hidden>
+ <div class="panel">
+  <h3>TRADING JOURNAL</h3>
+
+  <input id="tradePair" placeholder="Pair e.g. EURUSD">
+
+  <select id="direction">
+   <option>BUY</option>
+   <option>SELL</option>
+  </select>
+
+  <select id="result">
+   <option value="WIN">WIN</option>
+   <option value="LOSS">LOSS</option>
+  </select>
+
+  <input id="profit" type="number" placeholder="Profit / Loss ($)">
+
+  <input id="reason" placeholder="Trade reason">
+
+  <button class="action" onclick="saveTrade()">SAVE TRADE</button>
+ </div>
+
+ <div class="panel">
+  <h3>TRADE HISTORY</h3>
+  <div id="journal"></div>
+ </div>
+</section>
+
+</main>
+
+<footer>
+ MY TRADING PRO | Educational & Analysis Platform
+<br>Simulated journal and calculations. Not a broker.
+</footer>
+
+<script>
+const symbols=[
+ "EURUSD","GBPUSD","USDJPY","USDCHF",
+ "AUDUSD","USDCAD","NZDUSD","XAUUSD"
+];
+
+let current="EURUSD";
+
+function loadChart(){
+ document.getElementById("chart").innerHTML="";
+
+ const box=document.createElement("div");
+ box.id="tv_chart";
+ box.style.height="100%";
+ document.getElementById("chart").appendChild(box);
+
+ const script=document.createElement("script");
+ script.src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+ script.async=true;
+
+ script.innerHTML=JSON.stringify({
+  autosize:true,
+  symbol:"FX:"+current,
+  interval:"60",
+  timezone:"Asia/Kolkata",
+  theme:"dark",
+  style:"1",
+  locale:"en",
+  allow_symbol_change:true,
+  calendar:false,
+  support_host:"https://www.tradingview.com",
+  withdateranges:true,
+  hide_side_toolbar:false,
+  details:true,
+  hotlist:true,
+  studies:[
+   "STD;RSI",
+   "STD;MACD"
+  ]
+ });
+
+ box.appendChild(script);
+}
+
+function selectPair(pair){
+ current=pair;
+ document.getElementById("selectedPair").innerText=pair;
+ document.getElementById("pairName").innerText=
+ pair.slice(0,3)+"/"+pair.slice(3);
+ document.querySelectorAll(".pair").forEach(b=>{
+  b.classList.toggle("active",b.dataset.pair===pair);
+ });
+ loadChart();
+}
+
+const pairsDiv=document.getElementById("pairs");
+
+symbols.forEach(pair=>{
+ const b=document.createElement("button");
+ b.className="pair";
+ b.dataset.pair=pair;
+ b.innerText=pair;
+ b.onclick=()=>selectPair(pair);
+ pairsDiv.appendChild(b);
+});
+
+function widget(id,url,config){
+ const el=document.getElementById(id);
+ el.innerHTML="";
+ const s=document.createElement("script");
+ s.src=url;
+ s.async=true;
+ s.innerHTML=JSON.stringify(config);
+ el.appendChild(s);
+}
+
+function loadMarket(){
+ widget("market",
+ "https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js",
+ {
+  colorTheme:"dark",
+  dateRange:"12M",
+  showChart:true,
+  locale:"en",
+  isTransparent:true,
+  width:"100%",
+  height:400,
+  tabs:[{
+   title:"Forex",
+   symbols:[
+    {s:"FX:EURUSD",d:"EUR/USD"},
+    {s:"FX:GBPUSD",d:"GBP/USD"},
+    {s:"FX:USDJPY",d:"USD/JPY"},
+    {s:"FX:AUDUSD",d:"AUD/USD"},
+    {s:"OANDA:XAUUSD",d:"Gold"}
+   ]
+  }]
+ });
+}
+
+function loadTechnical(){
+ widget("technical",
+ "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js",
+ {
+  interval:"1h",
+  width:"100%",
+  isTransparent:true,
+  height:450,
+  symbol:"FX:"+current,
+  showIntervalTabs:true,
+  displayMode:"single",
+  locale:"en",
+  colorTheme:"dark"
+ });
+}
+
+function showTab(id,btn){
+ ["dashboard","analysis","calculator","journalPage"].forEach(x=>{
+  document.getElementById(x).hidden=x!==id;
+ });
+ document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");
+ if(id==="analysis")loadTechnical();
+}
+
+function calculate(){
+ const balance=Number(document.getElementById("balance").value);
+ const risk=Number(document.getElementById("risk").value);
+ const entry=Number(document.getElementById("entry").value);
+ const sl=Number(document.getElementById("sl").value);
+ const tp=Number(document.getElementById("tp").value);
+
+ const distance=Math.abs(entry-sl);
+ const reward=Math.abs(tp-entry);
+
+ if(!balance||risk<=0||risk>100||!entry||!sl||!tp||distance===0){
+  alert("Please enter valid values");
+  return;
+ }
+
+ const riskMoney=balance*risk/100;
+ const rewardMoney=riskMoney*reward/distance;
+ const lot=riskMoney/(distance*100000);
+
+ document.getElementById("riskAmount").innerText="$"+riskMoney.toFixed(2);
+ document.getElementById("rewardAmount").innerText="$"+rewardMoney.toFixed(2);
+ document.getElementById("rr").innerText="1 : "+(reward/distance).toFixed(2);
+ document.getElementById("lot").innerText=lot.toFixed(3);
+}
+
+function getTrades(){
+ return JSON.parse(localStorage.getItem("myTrades")||"[]");
+}
+
+function saveTrade(){
+ const pair=document.getElementById("tradePair").value.trim();
+ const direction=document.getElementById("direction").value;
+ const result=document.getElementById("result").value;
+ const profit=Number(document.getElementById("profit").value);
+ const reason=document.getElementById("reason").value;
+
+ if(!pair||!Number.isFinite(profit)){
+  alert("Enter pair and profit/loss");
+  return;
+ }
+
+ const trades=getTrades();
+ trades.unshift({
+  date:new Date().toLocaleDateString(),
+  pair,direction,result,profit,reason
+ });
+
+ localStorage.setItem("myTrades",JSON.stringify(trades));
+
+ document.getElementById("tradePair").value="";
+ document.getElementById("profit").value="";
+ document.getElementById("reason").value="";
+ showJournal();
+}
+
+function showJournal(){
+ const trades=getTrades();
+ const total=trades.reduce((sum,t)=>sum+t.profit,0);
+
+ let html="<p>Total Trades: "+trades.length+
+ " | Net P/L: $"+total.toFixed(2)+"</p><br>";
+
+ html+="<table><tr><th>Date</th><th>Pair</th><th>Side</th><th>Result</th><th>P/L</th></tr>";
+
+ trades.forEach(t=>{
+  html+="<tr><td>"+t.date+"</td><td>"+
+  escapeHTML(t.pair)+"</td><td>"+t.direction+"</td><td>"+
+  t.result+"</td><td class='"+(t.profit>=0?"green":"red")+"'>$"+
+  t.profit.toFixed(2)+"</td></tr>";
+ });
+
+ html+="</table>";
+ document.getElementById("journal").innerHTML=html;
+}
+
+function escapeHTML(value){
+ return String(value).replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",
+  '"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+selectPair("EURUSD");
+loadMarket();
+showJournal();
+</script>
+
+</body>
+</html>
